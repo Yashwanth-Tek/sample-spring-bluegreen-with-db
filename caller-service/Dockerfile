@@ -1,29 +1,19 @@
 # Build stage
-FROM maven:3.9-eclipse-temurin-21 AS build
-WORKDIR /app
-
-# Copy parent pom first
-COPY ../pom.xml /app/parent/pom.xml
-
-# Copy caller-service pom and source
-COPY pom.xml .
-COPY src ./src
-
-# Build the application
-RUN mvn clean package -DskipTests -f /app/pom.xml
-
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+WORKDIR /workspace
+# Copy root pom + module poms first (cache-friendly)
+COPY pom.xml ./pom.xml
+COPY person-service/pom.xml ./person-service/pom.xml
+COPY caller-service/pom.xml ./caller-service/pom.xml
+# Copy sources
+COPY person-service/src ./person-service/src
+COPY caller-service/src ./caller-service/src
+# Build only person-service (and any required deps via -am)
+RUN mvn -B -DskipTests -pl person-service -am clean package
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-
-# Copy the built jar from build stage
-COPY --from=build /app/target/*.jar app.jar
-
-# Expose port 80
+COPY --from=build /workspace/person-service/target/*.jar app.jar
 EXPOSE 80
-
-# Set server port to 80
 ENV SERVER_PORT=80
-
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java","-jar","app.jar"]
