@@ -1,15 +1,15 @@
 # Build stage
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /workspace
-# Copy root pom + module poms first (cache-friendly)
+
+# copy parent pom (for parent resolution) + module sources
 COPY pom.xml ./pom.xml
 COPY person-service/pom.xml ./person-service/pom.xml
-COPY caller-service/pom.xml ./caller-service/pom.xml
-# Copy sources
 COPY person-service/src ./person-service/src
-COPY caller-service/src ./caller-service/src
-# Build only person-service (and any required deps via -am)
-RUN mvn -B -DskipTests -pl person-service -am clean package
+
+# build ONLY the module (doesn't require other modules' folders)
+RUN mvn -B -DskipTests -f person-service/pom.xml clean package
+
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
