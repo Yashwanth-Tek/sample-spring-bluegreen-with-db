@@ -5,17 +5,26 @@ spring:
     url: jdbc:postgresql://postgres:5432/${DATABASE_NAME}
     username: ${DATABASE_USER}
     password: ${DATABASE_PASSWORD}
-
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} ${LOG_LEVEL_PATTERN:-%5p} %m%n"
-
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info     # expose health endpoints
   endpoint:
     health:
       show-details: ALWAYS
+      probes:
+        enabled: true             # enable probes
+  health:
+    livenessstate:
+      enabled: true               # enable explicit liveness
+    readinessstate:
+      enabled: true               # enable explicit readiness
+  endpoint:
+    health:
       group:
         readiness:
-          include: db
-      probes:
-        enabled: true
+          include: db             # include db in readiness group
